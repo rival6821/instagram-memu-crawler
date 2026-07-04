@@ -34,7 +34,7 @@ function getKSTDateString(date) {
 }
 
 function extractMenuText(altText) {
-  const match = altText.match(/문구:\s*'([^']+)'/);
+  const match = altText.match(/(?:문구:|text that says)\s*'([^']+)'/i);
   return match ? match[1] : '';
 }
 
@@ -68,6 +68,32 @@ async function downloadImage(url, filepath) {
   }
 }
 
+// Send the downloaded image URL to an external service
+async function sendToExternalService(imageUrl, postUrl, endpointUrl) {
+  try {
+    console.log(`✉️ Sending POST request to external service: ${endpointUrl}`);
+    const response = await fetch(endpointUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        imageUrl: imageUrl,
+        postUrl: postUrl,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (response.ok) {
+      console.log('    ✅ POST request to external service succeeded.');
+    } else {
+      console.log(`    ❌ POST request to external service failed: HTTP ${response.status}`);
+    }
+  } catch (err) {
+    console.log(`    ❌ Error sending POST request: ${err.message}`);
+  }
+}
+
 async function main() {
   program
     .argument('<username>', 'Target Instagram account username')
@@ -77,7 +103,8 @@ async function main() {
     .option('--only-new', 'Skip posts already downloaded (checks outdir)', false)
     .option('--today-only', 'Filter and download only posts from today (KST)', false)
     .option('--check-time-window', 'Skip execution if outside weekday 10:00 - 12:00 KST', false)
-    .option('--session <path>', 'Path to Playwright storageState JSON file for authentication', 'session.json');
+    .option('--session <path>', 'Path to Playwright storageState JSON file for authentication', 'session.json')
+    .option('--webhook <url>', 'Webhook URL to send today\'s menu image URL', 'https://test.com/api/menu');
 
   program.parse();
 
@@ -307,7 +334,7 @@ async function main() {
       const altData = await page.evaluate(() => {
         const candidates = Array.from(document.querySelectorAll('img[alt]'))
           .filter(img => {
-            const hasAltMatch = img.alt.includes('문구:');
+            const hasAltMatch = img.alt.includes('다이닝홀');
             const isNotLink = img.closest('a') === null;
             return hasAltMatch && isNotLink && img.naturalWidth >= 200;
           });
@@ -358,6 +385,11 @@ async function main() {
             const txtPath = filepath.replace('.jpg', '.txt');
             const txtContent = `# Menu from ${postDateStr} (${code})\n# Source: @${username}\n# URL: ${postUrl}\n\n${menuText}`;
             await fs.writeFile(txtPath, txtContent, 'utf-8');
+          }
+
+          // If the post was uploaded today, send the image URL to the webhook endpoint
+          if (postDateStr === todayStr && options.webhook) {
+            await sendToExternalService(src, postUrl, options.webhook);
           }
         }
       }

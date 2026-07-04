@@ -48,6 +48,7 @@ node find_menu_images.js <인스타그램_계정명> [옵션]
 | `--only-new` | 이미 저장 폴더에 다운로드되어 있는 포스트 코드를 확인해 중복 스캔 및 다운로드를 방지합니다. | `false` |
 | `--today-only` | 한국 표준시(KST) 기준 오늘 작성된 포스트만 필터링하여 스캔/다운로드합니다. | `false` |
 | `--check-time-window` | 실행 기준 시간이 주중(월~금) 오전 10:00 ~ 12:00 (KST) 사이가 아닐 경우 실행을 즉시 스킵합니다. | `false` |
+| `--webhook <url>` | 오늘(KST) 새로 다운로드한 메뉴 이미지 URL을 전송할 외부 웹훅 URL을 지정합니다. | `https://test.com/api/menu` |
 
 ### 💡 사용 예시
 
@@ -98,6 +99,29 @@ menu_images/
 오늘의 파스타 16,000원
 리조또 15,000원
 에이드 6,000원
+```
+
+---
+
+## 🔗 외부 서비스 연동 (Webhook API)
+
+오늘 날짜(KST)에 새로 다운로드된 오늘의 메뉴가 있는 경우, 해당 이미지의 CDN URL 주소와 포스트 상세 정보를 지정된 외부 서비스 API에 `POST` 요청(JSON 형식)으로 실시간 전송할 수 있습니다.
+
+### 요청 정보
+* **HTTP Method**: `POST`
+* **Content-Type**: `application/json`
+* **전송 Payload**:
+  ```json
+  {
+    "imageUrl": "https://instagram.f... (이미지 원본 주소)",
+    "postUrl": "https://www.instagram.com/p/...",
+    "timestamp": "2026-07-04T14:00:00.000Z"
+  }
+  ```
+
+### 실행 예시
+```bash
+node find_menu_images.js target_store_account --webhook "https://your-server.com/api/menu-webhook"
 ```
 
 ---
