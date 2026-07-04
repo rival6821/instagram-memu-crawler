@@ -1,0 +1,14 @@
+[Unit]
+Description=Instagram Menu Image Crawler Service
+After=network.target
+
+[Service]
+Type=simple
+# FIXME: Change YOUR_USER to your actual Linux username
+# FIXME: Change YOUR_INSTAGRAM_TARGET_USERNAME to the target Instagram account name
+WorkingDirectory=/home/YOUR_USER/find_menu_images
+ExecStart=/home/YOUR_USER/find_menu_images/run_cron.sh YOUR_INSTAGRAM_TARGET_USERNAME --today-only --only-new --check-time-window --extract-text
+User=YOUR_USER
+
+[Install]
+WantedBy=multi-user.target

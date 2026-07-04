@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Instagram Menu Image Crawler every 10 minutes on weekdays 10:00 - 12:00 (KST)
+
+[Timer]
+# Weekdays (Mon-Fri) 10:00 to 11:50, every 10 minutes
+OnCalendar=Mon..Fri 10,11:0/10
+# Weekdays (Mon-Fri) 12:00
+OnCalendar=Mon..Fri 12:00
+# Run immediately if a trigger was missed when the server was down
+Persistent=true
+
+[Install]
+WantedBy=timers.target
