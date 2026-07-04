@@ -76,7 +76,8 @@ async function main() {
     .option('--extract-text', 'Also save extracted menu text as .txt file', false)
     .option('--only-new', 'Skip posts already downloaded (checks outdir)', false)
     .option('--today-only', 'Filter and download only posts from today (KST)', false)
-    .option('--check-time-window', 'Skip execution if outside weekday 10:00 - 12:00 KST', false);
+    .option('--check-time-window', 'Skip execution if outside weekday 10:00 - 12:00 KST', false)
+    .option('--session <path>', 'Path to Playwright storageState JSON file for authentication', 'session.json');
 
   program.parse();
 
@@ -129,12 +130,32 @@ async function main() {
 
   console.log(`📋 Initializing Playwright browser to fetch posts from @${username}...`);
 
+  let sessionPath = options.session;
+  let hasSession = false;
+  try {
+    await fs.access(sessionPath);
+    hasSession = true;
+  } catch (err) {
+    if (options.session !== 'session.json') {
+      console.log(`⚠️ Specified session file not found: ${sessionPath}`);
+    }
+  }
+
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
+  const contextOptions = {
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     viewport: { width: 1280, height: 800 },
     locale: 'ko-KR',
-  });
+  };
+
+  if (hasSession) {
+    contextOptions.storageState = sessionPath;
+    console.log(`🔑 Loading session state from ${sessionPath}...`);
+  } else {
+    console.log(`⚠️ Running without session state (logged out).`);
+  }
+
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
 
   try {
@@ -187,6 +208,7 @@ async function main() {
         await page.waitForSelector('a[href*="/p/"]', { timeout: 10000 });
       } catch (bypassErr) {
         console.log(`❌ Failed to bypass login popup: ${bypassErr.message}`);
+        console.log(`   Current URL: ${page.url()}`);
         try {
           await page.screenshot({ path: path.join(options.outdir, 'debug_screenshot.png'), fullPage: true });
           console.log(`📸 Saved debug screenshot to ${path.join(options.outdir, 'debug_screenshot.png')}`);
@@ -284,7 +306,11 @@ async function main() {
       // Extract main menu image candidates
       const altData = await page.evaluate(() => {
         const candidates = Array.from(document.querySelectorAll('img[alt]'))
-          .filter(img => img.alt.includes('문구:') && img.naturalWidth >= 200);
+          .filter(img => {
+            const hasAltMatch = img.alt.includes('문구:');
+            const isNotLink = img.closest('a') === null;
+            return hasAltMatch && isNotLink && img.naturalWidth >= 200;
+          });
         if (candidates.length === 0) return [];
 
         // Sort by area descending — main post image is always the largest
@@ -292,9 +318,6 @@ async function main() {
           (b.naturalWidth * b.naturalHeight) - (a.naturalWidth * a.naturalHeight)
         );
         const largest = candidates[0];
-
-        // Main post images are >=800px wide; sidebar thumbnails are <=640px
-        if (largest.naturalWidth < 800) return [];
 
         return [{ alt: largest.alt, src: largest.src }];
       });
