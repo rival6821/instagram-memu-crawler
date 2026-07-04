@@ -1,0 +1,16 @@
+{
+  "name": "instagram-menu-crawler",
+  "version": "1.0.0",
+  "description": "Instagram menu image crawler using Playwright",
+  "main": "find_menu_images.js",
+  "type": "module",
+  "scripts": {
+    "start": "node find_menu_images.js"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "playwright": "^1.40.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}

@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 # FIXME: Change YOUR_USER to your actual Linux username
 # FIXME: Change YOUR_INSTAGRAM_TARGET_USERNAME to the target Instagram account name
+# NOTE: Ensure 'node' is in your PATH. If systemd fails to find 'node', add:
+# Environment=PATH=/usr/bin:/usr/local/bin:/home/YOUR_USER/.nvm/versions/node/vXX.XX.XX/bin
 WorkingDirectory=/home/YOUR_USER/find_menu_images
 ExecStart=/home/YOUR_USER/find_menu_images/run_cron.sh YOUR_INSTAGRAM_TARGET_USERNAME --today-only --only-new --check-time-window --extract-text
 User=YOUR_USER

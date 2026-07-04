@@ -8,8 +8,8 @@
 
 ## 🚀 작동 원리 (Strategy)
 
-1. **포스트 목록 조회**: [instagrapi](https://github.com/adw0rd/instagrapi) 라이브러리를 사용하여 비로그인(anonymous) 상태로 대상 계정의 최근 포스트 `shortcode` 목록을 가져옵니다.
-2. **웹 페이지 로드**: [Playwright](https://playwright.dev/)와 `playwright-stealth`를 사용해 헤드리스 브라우저로 각 포스트 페이지(`https://www.instagram.com/p/{code}/`)에 우회 접속합니다.
+1. **포스트 목록 조회**: [Playwright](https://playwright.dev/)와 `playwright-extra`(stealth 플러그인)를 사용하여 비로그인 상태로 대상 계정의 프로필 페이지(`https://www.instagram.com/{username}/`)를 방문하여 최근 포스트 `shortcode` 목록을 직접 긁어옵니다.
+2. **웹 페이지 로드**: 수집된 숏코드로 각 포스트 페이지(`https://www.instagram.com/p/{code}/`)에 우회 접속합니다.
 3. **대체 텍스트 필터링**: 로드된 이미지 중 대체 텍스트(Alt Text)에 한국어 메뉴를 지칭하는 `'문구:'`가 들어간 이미지를 찾습니다.
 4. **메인 이미지 감지**: 사이드바의 추천 이미지(작은 썸네일)를 배제하기 위해, 크기가 가로 800px 이상인 가장 큰 이미지를 추출합니다.
 5. **텍스트 추출 및 저장**: 감지된 이미지의 파일명을 메뉴의 첫 줄로 다듬어 저장하며, 옵션에 따라 본문 텍스트(.txt)도 함께 생성합니다.
@@ -18,17 +18,14 @@
 
 ## 🛠️ 요구사항 (Requirements)
 
-이 프로젝트를 실행하려면 Python 3.8 이상과 함께 브라우저 자동화를 위한 Playwright 크롬 드라이버 설치가 필요합니다.
+이 프로젝트를 실행하려면 **Node.js v18 이상**과 브라우저 자동화를 위한 Playwright 및 관련 종속성 패키지 설치가 필요합니다.
 
 ```bash
-# 필수 라이브러리 설치
-pip install instagrapi requests playwright playwright-stealth
-
-# 또는 uv 패키지 매니저 사용 시
-uv pip install instagrapi requests playwright playwright-stealth
+# npm 패키지 설치
+npm install
 
 # Playwright용 Chromium 브라우저 설치
-playwright install chromium
+npx playwright install chromium
 ```
 
 ---
@@ -38,7 +35,7 @@ playwright install chromium
 터미널에서 스크립트를 직접 실행할 수 있으며, 대상 인스타그램 계정명(username)이 필수 인자로 필요합니다.
 
 ```bash
-python find_menu_images.py <인스타그램_계정명> [옵션]
+node find_menu_images.js <인스타그램_계정명> [옵션]
 ```
 
 ### ⚙️ 사용 가능한 옵션
@@ -47,21 +44,21 @@ python find_menu_images.py <인스타그램_계정명> [옵션]
 | :--- | :--- | :--- |
 | `--count N` | 스캔할 최근 포스트의 개수를 지정합니다. | `20` |
 | `--outdir DIR` | 추출된 이미지가 저장될 디렉토리 경로를 지정합니다. | `./menu_images` |
-| `--extract-text` | 이미지를 저장할 때 추출된 메뉴 텍스트도 `.txt` 파일로 함께 저장합니다. | `False` |
-| `--only-new` | 이미 저장 폴더에 다운로드되어 있는 포스트 코드를 확인해 중복 스캔 및 다운로드를 방지합니다. | `False` |
-| `--today-only` | 한국 표준시(KST) 기준 오늘 작성된 포스트만 필터링하여 스캔/다운로드합니다. | `False` |
-| `--check-time-window` | 실행 기준 시간이 주중(월~금) 오전 10:00 ~ 12:00 (KST) 사이가 아닐 경우 실행을 즉시 스킵합니다. | `False` |
+| `--extract-text` | 이미지를 저장할 때 추출된 메뉴 텍스트도 `.txt` 파일로 함께 저장합니다. | `false` |
+| `--only-new` | 이미 저장 폴더에 다운로드되어 있는 포스트 코드를 확인해 중복 스캔 및 다운로드를 방지합니다. | `false` |
+| `--today-only` | 한국 표준시(KST) 기준 오늘 작성된 포스트만 필터링하여 스캔/다운로드합니다. | `false` |
+| `--check-time-window` | 실행 기준 시간이 주중(월~금) 오전 10:00 ~ 12:00 (KST) 사이가 아닐 경우 실행을 즉시 스킵합니다. | `false` |
 
 ### 💡 사용 예시
 
 * **기본 실행 (최근 20개 포스트 중 메뉴 감지하여 다운로드)**:
   ```bash
-  python find_menu_images.py target_store_account
+  node find_menu_images.js target_store_account
   ```
 
 * **주중 자동 스케줄러 실행 시 권장 옵션 (새로운 포스트와 오늘 작성된 메뉴만 빠르게 확인 및 시간대 검사)**:
   ```bash
-  python find_menu_images.py target_store_account --today-only --only-new --check-time-window --extract-text
+  node find_menu_images.js target_store_account --today-only --only-new --check-time-window --extract-text
   ```
 
 ---
@@ -112,14 +109,12 @@ menu_images/
 
 헤드리스 Chromium 브라우저를 구동하기 위한 Linux 시스템 종속성 패키지를 최초 1회 설치해야 합니다:
 ```bash
-# 가상환경 설정 및 Python 패키지 설치
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt # 또는 pip install instagrapi requests playwright playwright-stealth
-playwright install chromium
+# 패키지 설치 및 의존성 다운로드
+npm install
+npx playwright install chromium
 
 # Linux OS용 Playwright 시스템 의존성 패키지 설치 (sudo 권한 필요)
-playwright install-deps
+npx playwright install-deps
 ```
 
 ### 2. 래퍼 셸 스크립트 실행 권한
