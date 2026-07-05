@@ -101,7 +101,8 @@ async function main() {
     .option('--outdir <directory>', 'Output directory', './menu_images')
     .option('--extract-text', 'Also save extracted menu text as .txt file', false)
     .option('--only-new', 'Skip posts already downloaded (checks outdir)', false)
-    .option('--today-only', 'Filter and download only posts from today (KST)', false)
+    .option('--today-only', 'Filter and download only posts from target date (defaults to today KST)', false)
+    .option('--target-date <YYYY-MM-DD>', 'Target date for filtering and webhook (defaults to today KST)')
     .option('--check-time-window', 'Skip execution if outside weekday 10:00 - 12:00 KST', false)
     .option('--session <path>', 'Path to Playwright storageState JSON file for authentication', 'session.json')
     .option('--webhook <url>', 'Webhook URL to send today\'s menu image URL', 'https://test.com/api/menu');
@@ -112,7 +113,7 @@ async function main() {
   const options = program.opts();
 
   const nowKst = getKSTDate();
-  const todayStr = getKSTDateString(nowKst);
+  const targetDateStr = options.targetDate || getKSTDateString(nowKst);
 
   // Time window check
   if (options.checkTimeWindow) {
@@ -324,9 +325,9 @@ async function main() {
       const postKST = new Date(postDate.getTime() + (9 * 3600000));
       const postDateStr = getKSTDateString(postKST);
 
-      // Check today_only filter
-      if (options.todayOnly && postDateStr !== todayStr) {
-        console.log(`  · [${i + 1}/${targetCodes.length}] ${code} (${postDateStr.substring(5)}) — not from today, skipped`);
+      // Check today_only filter (which uses targetDateStr)
+      if (options.todayOnly && postDateStr !== targetDateStr) {
+        console.log(`  · [${i + 1}/${targetCodes.length}] ${code} (${postDateStr.substring(5)}) — not from target date, skipped`);
         continue;
       }
 
@@ -387,8 +388,8 @@ async function main() {
             await fs.writeFile(txtPath, txtContent, 'utf-8');
           }
 
-          // If the post was uploaded today, send the image URL to the webhook endpoint
-          if (postDateStr === todayStr && options.webhook) {
+          // If the post was uploaded on the target date, send the image URL to the webhook endpoint
+          if (postDateStr === targetDateStr && options.webhook) {
             await sendToExternalService(src, postUrl, options.webhook);
           }
         }
@@ -412,7 +413,7 @@ async function main() {
   try {
     const files = await fs.readdir(options.outdir);
     for (const fname of files) {
-      if (fname.startsWith(todayStr) && fname.endsWith('.jpg') && !fname.startsWith('today_menu')) {
+      if (fname.startsWith(targetDateStr) && fname.endsWith('.jpg') && !fname.startsWith('today_menu')) {
         const fpath = path.join(options.outdir, fname);
         const stat = await fs.stat(fpath);
         todayFiles.push({ path: fpath, mtime: stat.mtimeMs });
