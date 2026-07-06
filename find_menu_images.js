@@ -94,6 +94,36 @@ async function sendToExternalService(imageUrl, postUrl, endpointUrl) {
   }
 }
 
+// Send menu image URL to lunch.muz.kr API
+async function sendToLunchApi(imageUrl, apiUrl, apiKey) {
+  try {
+    console.log(`🍽️  Sending menu URL to lunch API: ${apiUrl}`);
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        uncle: imageUrl
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`    ✅ Lunch API updated successfully: ${JSON.stringify(result)}`);
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.log(`    ❌ Lunch API failed: HTTP ${response.status} — ${errorText}`);
+      return false;
+    }
+  } catch (err) {
+    console.log(`    ❌ Error calling lunch API: ${err.message}`);
+    return false;
+  }
+}
+
 async function main() {
   program
     .option('--count <number>', 'Number of posts to scan', (val) => parseInt(val, 10), 20)
@@ -104,7 +134,10 @@ async function main() {
     .option('--target-date <YYYY-MM-DD>', 'Target date for filtering and webhook (defaults to today KST)')
     .option('--check-time-window', 'Skip execution if outside weekday 10:00 - 12:00 KST', false)
     .option('--session <path>', 'Path to Playwright storageState JSON file for authentication', 'session.json')
-    .option('--webhook <url>', 'Webhook URL to send today\'s menu image URL', 'https://test.com/api/menu');
+    .option('--webhook <url>', 'Webhook URL to send today\'s menu image URL', 'https://test.com/api/menu')
+    .option('--lunch-api', 'Send menu image URL to lunch.muz.kr API', false)
+    .option('--lunch-api-url <url>', 'lunch.muz.kr API URL', 'https://lunch.muz.kr/')
+    .option('--lunch-api-key <key>', 'lunch.muz.kr API Bearer token', process.env.POST_AUTH_KEY || '');
 
   program.parse();
 
@@ -398,6 +431,16 @@ async function main() {
           // If the post was uploaded on the target date, send the image URL to the webhook endpoint
           if (postDateStr === targetDateStr && options.webhook) {
             await sendToExternalService(src, postUrl, options.webhook);
+          }
+
+          // If lunch-api is enabled, send the image URL to lunch.muz.kr
+          if (postDateStr === targetDateStr && options.lunchApi) {
+            const lunchKey = options.lunchApiKey || process.env.POST_AUTH_KEY || '';
+            if (lunchKey) {
+              await sendToLunchApi(src, options.lunchApiUrl, lunchKey);
+            } else {
+              console.log('    ⚠️  --lunch-api enabled but no API key provided (set --lunch-api-key or POST_AUTH_KEY env)');
+            }
           }
         }
       }
