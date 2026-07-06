@@ -10,14 +10,12 @@ cd "$DIR"
 # Lock file to prevent duplicate execution
 LOCKFILE="/tmp/find_menu_images.lock"
 
-# Check username argument
-if [ -z "$1" ]; then
-    echo "Usage: $0 <instagram_username> [additional_python_args...]"
-    exit 1
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    echo "Usage: $0 [additional_node_args...]"
+    exit 0
 fi
 
-USERNAME=$1
-shift # Shift arguments so $@ contains only additional python arguments
+USERNAME="jnjskybiz"
 
 # 1. Node.js Environment Setup and Dependency Check
 if [ ! -d "node_modules" ]; then
@@ -33,8 +31,8 @@ fi
 echo "Running find_menu_images.js for @$USERNAME..."
 
 if command -v flock >/dev/null 2>&1; then
-    exec flock -n "$LOCKFILE" node find_menu_images.js "$USERNAME" "$@"
+    exec flock -n "$LOCKFILE" node find_menu_images.js "$@"
 else
     echo "⚠️ 'flock' command not found. Running without file lock (Recommended on macOS for testing)..."
-    exec node find_menu_images.js "$USERNAME" "$@"
+    exec node find_menu_images.js "$@"
 fi

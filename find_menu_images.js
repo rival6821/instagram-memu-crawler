@@ -96,7 +96,6 @@ async function sendToExternalService(imageUrl, postUrl, endpointUrl) {
 
 async function main() {
   program
-    .argument('<username>', 'Target Instagram account username')
     .option('--count <number>', 'Number of posts to scan', (val) => parseInt(val, 10), 20)
     .option('--outdir <directory>', 'Output directory', './menu_images')
     .option('--extract-text', 'Also save extracted menu text as .txt file', false)
@@ -109,7 +108,7 @@ async function main() {
 
   program.parse();
 
-  const username = program.args[0];
+  const username = 'jnjskybiz';
   const options = program.opts();
 
   const nowKst = getKSTDate();
@@ -287,6 +286,14 @@ async function main() {
 
       try {
         await page.goto(postUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        
+        // Detect if Instagram blocked the request and redirected to a login or challenge page
+        if (page.url().includes('/challengepicker') || page.url().includes('login')) {
+          console.log(`  ⚠ [${i + 1}/${targetCodes.length}] ${code} — Instagram requested verification (Challenge/Login).`);
+          console.log(`  🚨 Session has been blocked or expired. Please generate a new session.json from your local PC and upload it to the server.`);
+          break; // Stop processing further posts as the session is compromised
+        }
+
         await page.waitForSelector('img[alt]', { timeout: 10000 });
         await page.waitForTimeout(2000); // Allow alt text and video to fully populate
       } catch (err) {

@@ -32,10 +32,10 @@ npx playwright install chromium
 
 ## 💻 사용 방법 (Usage)
 
-터미널에서 스크립트를 직접 실행할 수 있으며, 대상 인스타그램 계정명(username)이 필수 인자로 필요합니다.
+터미널에서 스크립트를 직접 실행할 수 있습니다. 대상 인스타그램 계정명은 `jnjskybiz`로 고정되어 있습니다.
 
 ```bash
-node find_menu_images.js <인스타그램_계정명> [옵션]
+node find_menu_images.js [옵션]
 ```
 
 ### ⚙️ 사용 가능한 옵션
@@ -54,12 +54,12 @@ node find_menu_images.js <인스타그램_계정명> [옵션]
 
 * **기본 실행 (최근 20개 포스트 중 메뉴 감지하여 다운로드)**:
   ```bash
-  node find_menu_images.js target_store_account
+  node find_menu_images.js
   ```
 
 * **주중 자동 스케줄러 실행 시 권장 옵션 (새로운 포스트와 오늘 작성된 메뉴만 빠르게 확인 및 시간대 검사)**:
   ```bash
-  node find_menu_images.js target_store_account --today-only --only-new --check-time-window --extract-text
+  node find_menu_images.js --today-only --only-new --check-time-window --extract-text
   ```
 
 ---
@@ -93,7 +93,7 @@ menu_images/
 
 ```text
 # Menu from 2026-07-03 (E5f6G7h8I)
-# Source: @target_store_account
+# Source: @jnjskybiz
 # URL: https://www.instagram.com/p/E5f6G7h8I/
 
 오늘의 파스타 16,000원
@@ -121,7 +121,7 @@ menu_images/
 
 ### 실행 예시
 ```bash
-node find_menu_images.js target_store_account --webhook "https://your-server.com/api/menu-webhook"
+node find_menu_images.js --webhook "https://your-server.com/api/menu-webhook"
 ```
 
 ---
@@ -156,16 +156,16 @@ chmod +x run_cron.sh
 `crontab -e` 명령어를 입력하고 아래 내용을 추가합니다.
 ```cron
 # 월~금요일 10:00 ~ 11:50 사이 10분마다, 그리고 12:00에 실행
-*/10 10,11 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh target_store_account --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
-0 12 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh target_store_account --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
+*/10 10,11 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
+0 12 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
 ```
 
 #### 서버 시간대가 UTC(기본값)인 경우:
 KST 기준 10시~12시는 **UTC 기준 01시~03시**에 해당합니다.
 ```cron
 # KST 기준 주중 10:00 ~ 12:00 -> UTC 기준 주중 01:00 ~ 03:00
-*/10 1,2 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh target_store_account --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
-0 3 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh target_store_account --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
+*/10 1,2 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
+0 3 * * 1-5 /home/YOUR_USER/find_menu_images/run_cron.sh --today-only --only-new --check-time-window --extract-text >> /home/YOUR_USER/find_menu_images/cron.log 2>&1
 ```
 *(참고: `--check-time-window` 옵션이 켜져 있으므로, 12:00 KST를 살짝 넘기더라도 스크립트 내부에서 자동으로 시간대를 필터링하여 안전하게 종료합니다.)*
 
@@ -174,7 +174,7 @@ KST 기준 10시~12시는 **UTC 기준 01시~03시**에 해당합니다.
 ### 3-B. Systemd Timer 설정 (로그 및 유닛 관리 추천)
 시스템의 크론 대신 systemd를 사용하여 로깅(journalctl)과 생명주기를 안정적으로 분리 관리할 수 있습니다.
 
-1. `systemd/find_menu.service` 파일 내 `YOUR_USER`와 `YOUR_INSTAGRAM_TARGET_USERNAME`을 실제 값으로 수정합니다.
+1. `systemd/find_menu.service` 파일 내 `YOUR_USER`를 실제 값으로 수정합니다.
 2. 유닛 파일들을 systemd 설정 디렉토리로 복사합니다:
    ```bash
    sudo cp systemd/find_menu.service /etc/systemd/system/
